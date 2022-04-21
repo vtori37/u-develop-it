@@ -1,6 +1,8 @@
+const express = require('express');
+const inputCheck = require('./utils/inputCheck');
+
 const mysql = require('mysql2'); 
 
-const express = require('express');
 
 const PORT = process.env.PORT || 3001;
 const app = express();
@@ -16,7 +18,7 @@ const db = mysql.createConnection(
     // Your MySQL username,
     user: 'root',
     // Your MySQL password
-    password: '',
+    password: 'vtori37PASS',
     database: 'election'
   },
   console.log('Connected to the election database.')
@@ -60,17 +62,37 @@ app.delete('/api/candidate/:id', (req, res) => {
     }
   });
 });
+
 // Create a candidate
-const sql = `INSERT INTO candidates (id, first_name, last_name, industry_connected) 
-              VALUES (?,?,?,?)`;
-const params = [1, 'Ronald', 'Firbank', 1];
+app.post('/api/candidate', ({ body }, res) => {
+  const errors = inputCheck(
+    body,
+    'first_name',
+    'last_name',
+    'industry_connected'
+  );
+  if (errors) {
+    res.status(400).json({ error: errors });
+    return;
+  }
+  const sql = `INSERT INTO candidates (first_name, last_name, industry_connected)
+  VALUES (?,?,?)`;
+const params = [body.first_name, body.last_name, body.industry_connected];
 
 db.query(sql, params, (err, result) => {
   if (err) {
-    console.log(err);
+    res.status(400).json({ error: err.message });
+    return;
   }
-  console.log(result);
+  res.json({
+    message: 'success',
+    data: body
+  });
 });
+});
+
+
+
 // Default response for any other request (Not Found); catchall route
 app.use((req, res) => {
   res.status(404).end();
